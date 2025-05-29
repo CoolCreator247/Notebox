@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{% block title %}AI Note-Taker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
+        nav { background-color: #333; padding: 1em; }
+        nav ul { list-style-type: none; margin: 0; padding: 0; text-align: center; }
+        nav ul li { display: inline; margin-right: 20px; }
+        nav ul li a { color: white; text-decoration: none; font-weight: bold; }
+        nav ul li a:hover { text-decoration: underline; }
+        .container { width: 80%; margin: auto; overflow: hidden; padding: 20px; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+        .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+        .alert-danger { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+        .note-item { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+        .note-item h3 { margin-top: 0; }
+        .note-item a { text-decoration: none; color: #337ab7; }
+        .note-item a:hover { text-decoration: underline; }
+        pre { background-color: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('home_page') }}">Home</a></li>
+            <li><a href="{{ url_for('upload_page') }}">Upload Note</a></li>
+            <li><a href="{{ url_for('list_notes_page') }}">View Notes</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

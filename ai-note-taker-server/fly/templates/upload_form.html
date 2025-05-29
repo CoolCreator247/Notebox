@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Note - AI Note-Taker{% endblock %}
+
+{% block content %}
+    <h2>Upload New Audio Note</h2>
+
+    {% if message %}
+        <div class="alert {% if success %}alert-success{% else %}alert-danger{% endif %}">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_page') }}">
+        <div>
+            <label for="audio_file">Choose audio file (e.g., .wav, .mp3):</label><br>
+            <input type="file" id="audio_file" name="audio_file" accept="audio/*" required>
+        </div>
+        <br>
+        <div>
+            <button type="submit">Upload and Process</button>
+        </div>
+    </form>
+
+    {% if note_data %}
+        <h3>Processed Note Data:</h3>
+        <p><strong>Note ID:</strong> {{ note_data.id }}</p>
+        <p><strong>Original Filename:</strong> {{ note_data.filename }}</p>
+        <div>
+            <h4>Transcript:</h4>
+            <pre>{{ note_data.transcript_data.transcript }}</pre>
+        </div>
+        <div>
+            <h4>Summary & Key Ideas:</h4>
+            <pre>{{ note_data.summary_data.summary }}</pre>
+        </div>
+        <p><a href="{{ url_for('display_note_page', id=note_data.id) }}">View full note details</a></p>
+    {% endif %}
+{% endblock %}

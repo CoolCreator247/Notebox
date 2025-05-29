@@ -1,0 +1,28 @@
+app = "ai-note-taker-dev"  # You can change this to your preferred app name
+primary_region = "ams"    # Amsterdam, you can choose a region closer to you if needed
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0 # Set to 1 for continuous availability, 0 for free tier hobby apps
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512 # Or 256 for smaller apps, adjust as needed
+
+# Optional: Add a [mounts] section if you want persistent storage for the SQLite DB
+# This is recommended for production to ensure data isn't lost on deploys/restarts.
+# [mounts]
+#   source="notetaker_data"
+#   destination="/data"
+
+# Then in app_fly.py, you would change DB_PATH to be /data/notes.db
+# For now, the DB is in the container and will reset if the machine is replaced.
+# The UPLOAD_FOLDER is also not persistent across deploys with this basic config.

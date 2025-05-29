@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}All Notes - AI Note-Taker{% endblock %}
+
+{% block content %}
+    <h2>All Notes</h2>
+
+    {% if notes %}
+        <ul>
+            {% for note in notes %}
+                <li class="note-item">
+                    <h3><a href="{{ url_for('display_note_page', id=note.id) }}">Note ID: {{ note.id }}</a></h3>
+                    <p><strong>Filename:</strong> {{ note.filename }}</p>
+                    {% if note.transcript_data and note.transcript_data.transcript %}
+                        <p><strong>Transcript Snippet:</strong> 
+                           {{ note.transcript_data.transcript[:200] }}{% if note.transcript_data.transcript|length > 200 %}...{% endif %}
+                        </p>
+                    {% else %}
+                        <p>No transcript available.</p>
+                    {% endif %}
+                    <p><a href="{{ url_for('display_note_page', id=note.id) }}">View full details &raquo;</a></p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No notes found. <a href="{{ url_for('upload_page') }}">Upload one now!</a></p>
+    {% endif %}
+{% endblock %}

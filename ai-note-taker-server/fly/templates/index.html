@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Home - AI Note-Taker{% endblock %}
+
+{% block content %}
+    <h1>Welcome to AI Note-Taker!</h1>
+    <p>This application allows you to upload audio files, get them transcribed, and then receive an AI-generated summary, key ideas, and Q&A pairs based on the transcription.</p>
+    <p>Use the navigation bar to upload a new note or view existing notes.</p>
+    
+    <h2>How it Works:</h2>
+    <ul>
+        <li><strong>Upload:</strong> Go to the "Upload Note" page and select an audio file (e.g., WAV, MP3).</li>
+        <li><strong>Transcription:</strong> The audio is sent to Deepgram for fast and accurate transcription.</li>
+        <li><strong>AI Processing:</strong> The transcript is then sent to DeepSeek to:
+            <ul>
+                <li>Generate a concise summary.</li>
+                <li>Extract key ideas.</li>
+                <li>Create potential question & answer pairs.</li>
+            </ul>
+        </li>
+        <li><strong>Review:</strong> View your processed notes, including the transcript, summary, and Q&A, on the "View Notes" page. You can also ask further questions about your notes.</li>
+    </ul>
+{% endblock %}
