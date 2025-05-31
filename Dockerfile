@@ -9,11 +9,12 @@ ENV PORT 8080
 # Create and set the working directory
 WORKDIR $APP_HOME
 
-# Copy the requirements file into the container
-COPY requirements.txt .
-
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies individually
+RUN pip install --no-cache-dir 'Flask>=2.0'
+RUN pip install --no-cache-dir 'requests>=2.20'
+RUN pip install --no-cache-dir 'gunicorn>=20.0'
+RUN pip install --no-cache-dir 'litedb==0.9.2'
+RUN pip install --no-cache-dir 'python-dotenv'
 
 # Copy the rest of the application code into the container
 COPY . .
