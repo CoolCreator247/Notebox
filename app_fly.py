@@ -83,8 +83,8 @@ def summarize_transcript(transcript_text, api_key):
         client = openai.OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
 
         messages = [
-            {"role": "system", "content": "You are a highly skilled AI assistant. Your task is to process the provided transcript and generate a comprehensive analysis. This analysis should include:\n1. A concise overall summary of the transcript.\n2. Key ideas presented, ideally as a bulleted list.\n3. A few relevant Question & Answer pairs based *only* on the information present in the transcript. Ensure the questions are insightful and the answers are extracted directly from the text."},
-            {"role": "user", "content": f"Please summarize the following transcript into bullet points, extract key ideas, and create a few question-answer pairs based on it: {transcript_text}"}
+            {"role": "system", "content": "You are a highly skilled AI lecture transcript asisstant. Your task is to process the provided transcript and generate a comprehensive analysis. This analysis should include:\n1. A concise overall summary of the transcript.\n2. Key ideas presented, ideally as a bulleted list.\n3. Action Items(if any). Ensure that everything is FROM THE TRANSCRIPT. Your role is to help the user with thier studies. Be AS HELPFUL as possible."},
+            {"role": "user", "content": f"Please summarize the folling transcript into bullet points, action items, and a consise summary: {transcript_text}"}
         ]
 
         completion = client.chat.completions.create(
