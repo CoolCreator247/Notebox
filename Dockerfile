@@ -13,7 +13,6 @@ WORKDIR $APP_HOME
 RUN pip install --no-cache-dir 'Flask>=2.0'
 RUN pip install --no-cache-dir 'requests>=2.20'
 RUN pip install --no-cache-dir 'gunicorn>=20.0'
-RUN pip install --no-cache-dir 'litedb==1.1.0'
 RUN pip install --no-cache-dir 'python-dotenv'
 
 # Copy the rest of the application code into the container
