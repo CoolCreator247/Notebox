@@ -39,6 +39,7 @@ DEEPGRAM_API_KEY = os.environ.get("DEEPGRAM_API_KEY", "f06448398f23e5b0444bd76b5
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
 # Helper to get next note ID
 def get_next_note_id():
     data = read_data()
