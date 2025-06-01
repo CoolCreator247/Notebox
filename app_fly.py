@@ -1,8 +1,30 @@
 import os
 import uuid
 import requests
+import json # Make sure json is imported
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
-from litedb import DiskDatabase
+
+DATA_FILE = os.path.join(os.path.dirname(__file__), 'data.json')
+
+def get_initial_data():
+    return {"notes": [], "counters": {"note_id_counter": 0}}
+
+def read_data():
+   try:
+       if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
+           data = get_initial_data()
+           write_data(data) # Initialize file if it doesn't exist or is empty
+           return data
+       with open(DATA_FILE, 'r') as f:
+           return json.load(f)
+   except (json.JSONDecodeError, FileNotFoundError):
+       data = get_initial_data()
+       write_data(data) # Re-initialize if corrupted or truly missing after check
+       return data
+
+def write_data(data):
+   with open(DATA_FILE, 'w') as f:
+       json.dump(data, f, indent=4)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your_default_secret_key')
@@ -17,26 +39,15 @@ DEEPGRAM_API_KEY = os.environ.get("DEEPGRAM_API_KEY", "f06448398f23e5b0444bd76b5
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# LiteDB Initialization
-DB_PATH = os.path.join(os.path.dirname(__file__), 'notes.db')
-db = DiskDatabase(DB_PATH)
-notes_collection = db.get_collection('notes')
-counters_collection = db.get_collection('counters')
 
 # Helper to get next note ID
 def get_next_note_id():
-    try:
-        counter_doc = counters_collection.find_one({'_id': 'note_id_counter'})
-        if counter_doc:
-            next_id = counter_doc['value'] + 1
-            counters_collection.update_one({'_id': 'note_id_counter'}, {'value': next_id})
-            return next_id
-        else:
-            counters_collection.insert_one({'_id': 'note_id_counter', 'value': 1})
-            return 1
-    except Exception as e:
-        print(f"Database error in get_next_note_id: {e}") # Using print for logging
-        return None
+    data = read_data()
+    counter = data['counters'].get('note_id_counter', 0)
+    next_id = counter + 1
+    data['counters']['note_id_counter'] = next_id
+    write_data(data)
+    return next_id
 
 def transcribe_audio(audio_filepath, audio_ext, api_key):
     """
@@ -183,8 +194,11 @@ def api_upload():
             "transcription_status": processed_data["transcription_status_message"],
             "summarization_status": processed_data["summarization_status_message"]
         }
+        # note_doc_instance = NoteDocument(**db_note_data) # Create instance # No longer needed
         try:
-            notes_collection.insert_one(db_note_data)
+            data = read_data()
+            data['notes'].append(db_note_data) # db_note_data is the note dictionary
+            write_data(data)
         except Exception as e:
             print(f"Database insert error in api_upload: {e}")
             return jsonify({"error": "Database error occurred"}), 500
@@ -227,8 +241,11 @@ def upload_page():
                 "transcription_status": processed_data["transcription_status_message"], # For display/debug
                 "summarization_status": processed_data["summarization_status_message"]  # For display/debug
             }
+            # note_doc_instance = NoteDocument(**db_note_data) # Create instance # No longer needed
             try:
-                notes_collection.insert_one(db_note_data)
+                data = read_data()
+                data['notes'].append(db_note_data) # db_note_data is the note dictionary
+                write_data(data)
             except Exception as e:
                 print(f"Database insert error in upload_page: {e}")
                 flash("A critical error occurred while saving your note. Please try again later.", "danger")
@@ -247,27 +264,17 @@ def upload_page():
 # Web UI List All Notes
 @app.route("/notes")
 def list_notes_page():
-    all_notes = []
-    try:
-        all_notes = list(notes_collection.find({})) # Convert cursor to list for template
-    except Exception as e:
-        print(f"Database find error in list_notes_page: {e}")
-        flash("Error retrieving notes from database. Please try again later.", "danger")
-    # LiteDB might add its own `_id`. We are using custom `id`. Ensure templates use `note.id`.
-    # If `_id` is an ObjectId, it's not directly JSON serializable for `jsonify` if we were to pass it.
-    # For templates, it's fine.
+    data = read_data()
+    all_notes = data.get('notes', [])
+    # The notes are already dictionaries, so no conversion needed.
     return render_template("notes_list.html", notes=all_notes)
 
 # Web UI Display Specific Note
 @app.route("/notes/<int:id>")
 def display_note_page(id):
-    note = None
-    try:
-        note = notes_collection.find_one({'id': id})
-    except Exception as e:
-        print(f"Database find_one error in display_note_page for id {id}: {e}")
-        flash(f"Error retrieving note {id} from database. Please try again later.", "danger")
-        return redirect(url_for('list_notes_page'))
+    data = read_data()
+    note = next((n for n in data.get('notes', []) if n.get('id') == id), None)
+    # note is already a dictionary or None
 
     if note:
         return render_template("note_display.html", note=note)
@@ -279,34 +286,18 @@ def display_note_page(id):
 # API: Get All Notes Endpoint
 @app.route("/api/notes", methods=["GET"])
 def get_all_notes_api():
-    all_notes = []
-    try:
-        all_notes = list(notes_collection.find({}))
-    except Exception as e:
-        print(f"Database find error in get_all_notes_api: {e}")
-        # For an API, we might return a 500 error or an empty list with a warning
-        # Depending on desired API behavior. For now, returning empty list on error.
-        return jsonify({"error": "Could not retrieve notes due to a database error."}), 500
-
-    # Remove LiteDB's internal _id if present and not desired in API response
-    for note in all_notes:
-        if '_id' in note: # LiteDB adds _id as string representation of ObjectId by default
-            del note['_id'] # Or transform it if needed
+    data = read_data()
+    all_notes = data.get('notes', [])
+    # Remove the old _id deletion logic as it's not relevant for JSON dicts here.
     return jsonify(all_notes)
 
 # API: Get Specific Note Endpoint
 @app.route("/api/notes/<int:id>", methods=["GET"])
 def get_note_api(id):
-    note = None
-    try:
-        note = notes_collection.find_one({'id': id})
-    except Exception as e:
-        print(f"Database find_one error in get_note_api for id {id}: {e}")
-        return jsonify({"error": "Database error occurred while retrieving note."}), 500
-
+    data = read_data()
+    note = next((n for n in data.get('notes', []) if n.get('id') == id), None)
     if note:
-        if '_id' in note:
-            del note['_id']
+        # Remove _id deletion if it was there.
         return jsonify(note)
     else:
         return jsonify({"error": "Note not found"}), 404
@@ -314,24 +305,19 @@ def get_note_api(id):
 # API: Search Notes Endpoint (remains API only for now)
 @app.route("/api/notes/search", methods=["GET"])
 def search_notes_api():
-    query = request.args.get("q", "").lower()
-    if not query:
+    query_str = request.args.get("q", "").lower() # Renamed to query_str to avoid conflict with module name
+    if not query_str:
         return jsonify({"error": "Search query cannot be empty"}), 400
     
-    # Basic text search in transcript and summary. LiteDB doesn't have complex text indexing.
-    # For larger datasets, a more robust search solution would be needed.
+    data = read_data()
     results = []
-    try:
-        for note in notes_collection.find({}):
-            transcript = note.get("transcript_data", {}).get("transcript", "").lower()
-            summary = note.get("summary_data", {}).get("summary", "").lower()
-            if query in transcript or query in summary:
-                if '_id' in note: # Clean up for API response
-                    del note['_id']
-                results.append(note)
-    except Exception as e:
-        print(f"Database find error during search in search_notes_api: {e}")
-        return jsonify({"error": "Database error occurred during search."}), 500
+    for note_dict in data.get('notes', []):
+        transcript_text = note_dict.get("transcript_data", {}).get("transcript", "").lower()
+        summary_text = note_dict.get("summary_data", {}).get("summary", "").lower()
+        filename_text = note_dict.get("filename", "").lower()
+
+        if query_str in transcript_text or query_str in summary_text or query_str in filename_text:
+            results.append(note_dict)
     return jsonify(results)
 
 # API: Q&A Endpoint
@@ -348,12 +334,8 @@ def qa_page_api_placeholder():
         
     question = data["question"]
 
-    note = None
-    try:
-        note = notes_collection.find_one({'id': note_id})
-    except Exception as e:
-        print(f"Database find_one error in qa_page_api_placeholder for id {note_id}: {e}")
-        return jsonify({"error": "Database error occurred when retrieving note for Q&A."}), 500
+    data_content = read_data() # Renamed to avoid conflict
+    note = next((n for n in data_content.get('notes', []) if n.get('id') == note_id), None)
 
     if not note:
         return jsonify({"error": f"Note with id {note_id} not found"}), 404
@@ -363,7 +345,7 @@ def qa_page_api_placeholder():
     if not context_text or \
        context_text.startswith("Transcription failed") or \
        context_text.startswith("Deepgram API Error") or \
-       context_text == "Transcript not found in response.":
+       context_text == "Transcript not found in response.": # This specific string check might need to be more robust
         return jsonify({"error": "Cannot perform Q&A due to missing, failed, or empty transcript"}), 400
 
     answer = "Q&A processing failed."
