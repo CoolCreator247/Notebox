@@ -59,10 +59,9 @@ def transcribe_audio(audio_filepath, audio_ext, api_key):
         with open(audio_filepath, 'rb') as audio:
             headers = {
                 "Authorization": f"Token {api_key}",
-                "Content-Type": f"audio/{audio_ext}"
+                "Content-Type": "audio/*"
             }
-            params = {"model": "nova-2", "punctuate": "true"}
-            response = requests.post("https://api.deepgram.com/v1/listen", headers=headers, params=params, data=audio)
+            response = requests.post("https://api.deepgram.com/v1/listen", headers=headers, data=audio)
             response.raise_for_status()
             deepgram_data = response.json()
             transcript_text = deepgram_data.get('results', {}).get('channels', [{}])[0].get('alternatives', [{}])[0].get('transcript')
@@ -90,7 +89,8 @@ def summarize_transcript(transcript_text, api_key):
 
         completion = client.chat.completions.create(
             model="deepseek-chat",
-            messages=messages
+            messages=messages,
+            stream=False
         )
 
         summary_text = completion.choices[0].message.content if completion.choices else None
@@ -365,7 +365,8 @@ def qa_page_api_placeholder():
 
         completion = client.chat.completions.create(
             model="deepseek-chat",
-            messages=messages
+            messages=messages,
+            stream=False
         )
 
         answer = completion.choices[0].message.content if completion.choices else 'Answer not found in response.'
