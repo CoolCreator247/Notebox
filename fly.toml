@@ -1,4 +1,4 @@
-app = "ai-note-taker-dev"  # You can change this to your preferred app name
+app = "notebox-dev"  # You can change this to your preferred app name
 primary_region = "ams"    # Amsterdam, you can choose a region closer to you if needed
 
 [build]
