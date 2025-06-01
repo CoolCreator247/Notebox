@@ -12,6 +12,7 @@ WORKDIR $APP_HOME
 # Install dependencies individually
 RUN pip install --no-cache-dir 'Flask>=2.0'
 RUN pip install --no-cache-dir 'requests>=2.20'
+RUN pip install --no-cache-dir 'openai' # Added for OpenAI SDK
 RUN pip install --no-cache-dir 'gunicorn>=20.0'
 RUN pip install --no-cache-dir 'python-dotenv'
 
