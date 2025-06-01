@@ -59,10 +59,9 @@ def transcribe_audio(audio_filepath, audio_ext, api_key):
         with open(audio_filepath, 'rb') as audio:
             headers = {
                 "Authorization": f"Token {api_key}",
-                "Content-Type": f"audio/{audio_ext}"
+                "Content-Type": "audio/*"
             }
-            params = {"model": "nova-2", "punctuate": "true"}
-            response = requests.post("https://api.deepgram.com/v1/listen", headers=headers, params=params, data=audio)
+            response = requests.post("https://api.deepgram.com/v1/listen", headers=headers, data=audio)
             response.raise_for_status()
             deepgram_data = response.json()
             transcript_text = deepgram_data.get('results', {}).get('channels', [{}])[0].get('alternatives', [{}])[0].get('transcript')
@@ -81,7 +80,7 @@ def summarize_transcript(transcript_text, api_key):
     Returns a dictionary with {"summary": summary_text, "error": error_message}.
     """
     try:
-        client = openai.OpenAI(api_key=api_key, base_url="https://api.deepseek.com", timeout=30.0)
+        client = openai.OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
 
         messages = [
             {"role": "system", "content": "You are a highly skilled AI assistant. Your task is to process the provided transcript and generate a comprehensive analysis. This analysis should include:\n1. A concise overall summary of the transcript.\n2. Key ideas presented, ideally as a bulleted list.\n3. A few relevant Question & Answer pairs based *only* on the information present in the transcript. Ensure the questions are insightful and the answers are extracted directly from the text."},
@@ -90,7 +89,8 @@ def summarize_transcript(transcript_text, api_key):
 
         completion = client.chat.completions.create(
             model="deepseek-chat",
-            messages=messages
+            messages=messages,
+            stream=False
         )
 
         summary_text = completion.choices[0].message.content if completion.choices else None
@@ -356,7 +356,7 @@ def qa_page_api_placeholder():
 
     answer = "Q&A processing failed."
     try:
-        client = openai.OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com", timeout=30.0)
+        client = openai.OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
         messages = [
             {"role": "system", "content": "You are an AI assistant specializing in answering questions based *strictly* on the provided text. Do not infer information or use external knowledge. If the answer is not found in the text, clearly state that the information is not available in the provided context."},
@@ -365,7 +365,8 @@ def qa_page_api_placeholder():
 
         completion = client.chat.completions.create(
             model="deepseek-chat",
-            messages=messages
+            messages=messages,
+            stream=False
         )
 
         answer = completion.choices[0].message.content if completion.choices else 'Answer not found in response.'
