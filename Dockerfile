@@ -29,4 +29,4 @@ EXPOSE 8080
 # The app_fly.py will use its hardcoded fallbacks if these are not set.
 
 # Run app_fly.py when the container launches
-CMD gunicorn --bind 0.0.0.0:$PORT app_fly:app
+CMD gunicorn --bind 0.0.0.0:$PORT --timeout 60 app_fly:app
