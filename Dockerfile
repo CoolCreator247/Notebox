@@ -12,6 +12,7 @@ WORKDIR $APP_HOME
 # Install dependencies individually
 RUN pip install --no-cache-dir 'Flask>=2.0'
 RUN pip install --no-cache-dir 'requests>=2.20'
+RUN pip install --no-cache-dir 'openai' # Added for OpenAI SDK
 RUN pip install --no-cache-dir 'gunicorn>=20.0'
 RUN pip install --no-cache-dir 'python-dotenv'
 
@@ -28,4 +29,4 @@ EXPOSE 8080
 # The app_fly.py will use its hardcoded fallbacks if these are not set.
 
 # Run app_fly.py when the container launches
-CMD gunicorn --bind 0.0.0.0:$PORT app_fly:app
+CMD gunicorn --bind 0.0.0.0:$PORT --timeout 60 app_fly:app
