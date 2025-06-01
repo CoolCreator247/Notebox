@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Note {{ note.id }} - AI Note-Taker{% endblock %}
+{% block title %}Note {{ note.id }} - Notebox DEV{% endblock %}
 
 {% block content %}
     {% if note %}
@@ -58,4 +58,37 @@
         <p>The note you are looking for does not exist.</p>
         <p><a href="{{ url_for('list_notes_page') }}">View All Notes</a></p>
     {% endif %}
+
+<script>
+    document.getElementById('qaForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const form = event.target;
+        const note_id = form.elements['note_id'].value;
+        const question = form.elements['question'].value;
+        const responseDiv = document.getElementById('qaResponse');
+        responseDiv.innerHTML = 'Asking...';
+
+        fetch('{{ url_for('qa_page_api_placeholder') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ note_id: parseInt(note_id), question: question })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.answer) {
+                responseDiv.innerHTML = '<p><strong>Answer:</strong></p><pre>' + data.answer + '</pre>';
+            } else if (data.error) {
+                responseDiv.innerHTML = '<p style="color:red;"><strong>Error:</strong> ' + data.error + '</p>';
+            } else {
+                responseDiv.innerHTML = '<p style="color:red;">Unexpected response from server.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            responseDiv.innerHTML = '<p style="color:red;">Failed to get answer. Please check console for details.</p>';
+        });
+    });
+</script>
 {% endblock %}
