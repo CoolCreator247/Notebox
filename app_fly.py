@@ -80,7 +80,7 @@ def summarize_transcript(transcript_text, api_key):
     Returns a dictionary with {"summary": summary_text, "error": error_message}.
     """
     try:
-        client = openai.OpenAI(api_key=api_key, base_url="https://api.deepseek.com", timeout=30.0)
+        client = openai.OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
 
         messages = [
             {"role": "system", "content": "You are a highly skilled AI assistant. Your task is to process the provided transcript and generate a comprehensive analysis. This analysis should include:\n1. A concise overall summary of the transcript.\n2. Key ideas presented, ideally as a bulleted list.\n3. A few relevant Question & Answer pairs based *only* on the information present in the transcript. Ensure the questions are insightful and the answers are extracted directly from the text."},
@@ -356,7 +356,7 @@ def qa_page_api_placeholder():
 
     answer = "Q&A processing failed."
     try:
-        client = openai.OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com", timeout=30.0)
+        client = openai.OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
         messages = [
             {"role": "system", "content": "You are an AI assistant specializing in answering questions based *strictly* on the provided text. Do not infer information or use external knowledge. If the answer is not found in the text, clearly state that the information is not available in the provided context."},
