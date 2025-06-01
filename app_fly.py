@@ -2,7 +2,7 @@ import os
 import uuid
 import requests
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
-from litedb import LiteDB
+from litedb import DiskDatabase
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your_default_secret_key')
@@ -19,7 +19,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # LiteDB Initialization
 DB_PATH = os.path.join(os.path.dirname(__file__), 'notes.db')
-db = LiteDB(DB_PATH)
+db = DiskDatabase(DB_PATH)
 notes_collection = db.get_collection('notes')
 counters_collection = db.get_collection('counters')
 
