@@ -2,6 +2,7 @@ import os
 import uuid
 import requests
 import json # Make sure json is imported
+import openai # Added for DeepSeek API
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'data.json')
@@ -80,28 +81,33 @@ def summarize_transcript(transcript_text, api_key):
     Returns a dictionary with {"summary": summary_text, "error": error_message}.
     """
     try:
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "deepseek-chat",
-            "messages": [
-                {"role": "system", "content": "You are a highly skilled AI assistant. Your task is to process the provided transcript and generate a comprehensive analysis. This analysis should include:\n1. A concise overall summary of the transcript.\n2. Key ideas presented, ideally as a bulleted list.\n3. A few relevant Question & Answer pairs based *only* on the information present in the transcript. Ensure the questions are insightful and the answers are extracted directly from the text."},
-                {"role": "user", "content": f"Please summarize the following transcript into bullet points, extract key ideas, and create a few question-answer pairs based on it: {transcript_text}"}
-            ]
-        }
-        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
-        response.raise_for_status()
-        deepseek_data = response.json()
-        summary_text = deepseek_data.get('choices', [{}])[0].get('message', {}).get('content')
+        client = openai.OpenAI(api_key=api_key, base_url="https://api.deepseek.com", timeout=30.0)
+
+        messages = [
+            {"role": "system", "content": "You are a highly skilled AI assistant. Your task is to process the provided transcript and generate a comprehensive analysis. This analysis should include:\n1. A concise overall summary of the transcript.\n2. Key ideas presented, ideally as a bulleted list.\n3. A few relevant Question & Answer pairs based *only* on the information present in the transcript. Ensure the questions are insightful and the answers are extracted directly from the text."},
+            {"role": "user", "content": f"Please summarize the following transcript into bullet points, extract key ideas, and create a few question-answer pairs based on it: {transcript_text}"}
+        ]
+
+        completion = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=messages
+        )
+
+        summary_text = completion.choices[0].message.content if completion.choices else None
+
         if summary_text:
             return {"summary": summary_text, "error": None}
         else:
             return {"summary": None, "error": "Summary not found in DeepSeek response."}
-    except requests.exceptions.RequestException as e:
+    except openai.APITimeoutError:
+        return {"summary": None, "error": "DeepSeek API request timed out after 30 seconds."}
+    except openai.APIConnectionError as e:
+        return {"summary": None, "error": f"DeepSeek API connection error: {str(e)}"}
+    except openai.APIStatusError as e:
+        return {"summary": None, "error": f"DeepSeek API status error: {str(e)}"}
+    except openai.APIError as e: # Catch-all for other OpenAI errors
         return {"summary": None, "error": f"DeepSeek API Error: {str(e)}"}
-    except (KeyError, IndexError, TypeError) as e:
+    except (KeyError, IndexError, TypeError) as e: # For issues with parsing the response structure
         return {"summary": None, "error": f"DeepSeek response parsing error: {str(e)}"}
 
 # Unified Processing Pipeline
@@ -350,21 +356,29 @@ def qa_page_api_placeholder():
 
     answer = "Q&A processing failed."
     try:
-        headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
-        payload = {
-            "model": "deepseek-chat",
-            "messages": [
-                {"role": "system", "content": "You are an AI assistant specializing in answering questions based *strictly* on the provided text. Do not infer information or use external knowledge. If the answer is not found in the text, clearly state that the information is not available in the provided context."},
-                {"role": "user", "content": f"Based on the following text: \"{context_text}\", please answer this question: \"{question}\""}
-            ]
-        }
-        response = requests.post("https://api.deepseek.com/chat/completions", headers=headers, json=payload)
-        response.raise_for_status()
-        deepseek_data = response.json()
-        answer = deepseek_data.get('choices', [{}])[0].get('message', {}).get('content', 'Answer not found in response.')
-    except requests.exceptions.RequestException as e:
+        client = openai.OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com", timeout=30.0)
+
+        messages = [
+            {"role": "system", "content": "You are an AI assistant specializing in answering questions based *strictly* on the provided text. Do not infer information or use external knowledge. If the answer is not found in the text, clearly state that the information is not available in the provided context."},
+            {"role": "user", "content": f"Based on the following text: \"{context_text}\", please answer this question: \"{question}\""}
+        ]
+
+        completion = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=messages
+        )
+
+        answer = completion.choices[0].message.content if completion.choices else 'Answer not found in response.'
+
+    except openai.APITimeoutError:
+        answer = "DeepSeek API request timed out after 30 seconds during Q&A."
+    except openai.APIConnectionError as e:
+        answer = f"DeepSeek API connection error during Q&A: {str(e)}"
+    except openai.APIStatusError as e:
+        answer = f"DeepSeek API status error during Q&A: {str(e)}"
+    except openai.APIError as e: # Catch-all for other OpenAI errors
         answer = f"DeepSeek API Error during Q&A: {str(e)}"
-    except (KeyError, IndexError, TypeError) as e:
+    except (KeyError, IndexError, TypeError) as e: # For issues with parsing the response structure
         answer = f"DeepSeek Q&A response parsing error: {str(e)}"
 
     return jsonify({"note_id": note_id, "question": question, "answer": answer})
